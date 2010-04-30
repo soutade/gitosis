@@ -210,6 +210,18 @@ class Main(app.App):
             sys.exit(1)
 
         main_log.debug('Serving %s', newcmd)
-        os.execvp('git', ['git', 'shell', '-c', newcmd])
+        groups = ''
+        for section in cfg.sections():
+            if section[1:5] != "group" or not cfg.has_option(section, 'members'):
+                continue
+            for member in cfg.get(section, 'members').split(' '):
+                if member == user:
+                    groups = groups + section[6:] + ','
+                    break
+        # Suppress last comma
+        if len(groups) > 0:
+            groups = groups[:-1]
+
+        os.execvpe('git', ['git', 'shell', '-c', newcmd], {'GITOSIS_USER' : user, 'GITOSIS_GROUPS' : groups})
         main_log.error('Cannot execute git-shell.')
         sys.exit(1)
